@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frown Face-Off</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,700;9..144,900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14161f;--card:#1e2130;--line:#2e3247;--text:#eef0f7;--mute:#9096b0;--accent:#ffb347;--bad:#ff6b6b;--good:#6ee7a0}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(1200px 600px at 50% -200px,#2a2f4d,var(--bg));color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100vh;padding:24px 16px 60px}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-family:'Fraunces',serif;font-weight:900;font-size:clamp(2rem,6vw,3.2rem);text-align:center;letter-spacing:-.02em}
+h1 span{color:var(--accent)}
+h2{font-family:'Fraunces',serif;font-size:1.4rem;margin:34px 0 14px}
+.sub{text-align:center;color:var(--mute);margin:6px 0 20px}
+.round{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:8px 16px;font-size:.92rem;color:var(--mute)}
+.pill b{color:var(--text)}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;max-width:460px;margin:0 auto;text-align:center}
+.stage{position:relative;aspect-ratio:1;border-radius:16px;overflow:hidden;background:#0d0f16;margin-bottom:14px}
+.stage video,.stage img{width:100%;height:100%;object-fit:cover;display:block}
+.stage video{transform:scaleX(-1)}
+.ring{position:absolute;inset:12% 22%;border:3px dashed rgba(255,255,255,.35);border-radius:50%;pointer-events:none}
+.big{position:absolute;inset:0;display:grid;place-items:center;font-family:'Fraunces',serif;font-weight:900;font-size:6rem;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.7);pointer-events:none}
+input[type=text]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#12141d;color:var(--text);font:inherit;margin-bottom:12px;text-align:center}
+button.go,label.go{display:block;width:100%;background:var(--accent);color:#1a1a1a;border:none;border-radius:12px;padding:13px;font:700 1rem 'DM Sans';cursor:pointer;margin-top:8px}
+button.alt{background:none;border:1px solid var(--line);color:var(--mute);border-radius:12px;padding:11px;font:500 .95rem 'DM Sans';cursor:pointer;width:100%;margin-top:8px}
+button:disabled{opacity:.4;cursor:not-allowed}
+.note{color:var(--mute);font-size:.85rem;margin-top:10px;line-height:1.4}
+.err{color:var(--bad)}
+.lock{font-size:2.4rem;margin-bottom:6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:10px;text-align:center;position:relative}
+.card.lead{border-color:#ffd24d}
+.card.mine{border-style:dashed}
+.card.picked{border-color:var(--good)}
+.card .stage{margin-bottom:8px;border-radius:12px}
+.card .nm{font-family:'Fraunces',serif;font-weight:700;font-size:1.05rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.crown{position:absolute;top:-12px;left:50%;transform:translateX(-50%);font-size:1.6rem}
+.vote{width:100%;margin-top:8px;border-radius:10px;border:1px solid var(--line);background:#12141d;color:var(--text);padding:9px;font:700 .95rem 'DM Sans';cursor:pointer}
+.vote.on{background:var(--good);color:#10281a;border-color:var(--good)}
+.vote:disabled{opacity:.45;cursor:default}
+.empty{text-align:center;color:var(--mute);padding:26px 0}
+.fame{display:flex;flex-direction:column;gap:8px}
+.frow{display:grid;grid-template-columns:52px 1fr auto;gap:14px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 14px}
+.frow img{width:52px;height:52px;border-radius:10px;object-fit:cover}
+.frow .w{font-weight:700}.frow .t{color:var(--mute);font-size:.82rem}
+.wins{display:flex;flex-wrap:wrap;gap:8px}
+.banner{background:#3a2430;border:1px solid #6b3a4a;color:#ffb8c4;border-radius:14px;padding:14px;text-align:center;max-width:560px;margin:0 auto 18px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Frown <span>Face-Off</span> 🙁</h1>
+  <p class="sub">One frown per person, per hour. Best frown of the round wins.</p>
+  <div id="banner"></div>
+  <div class="round" id="round"></div>
+  <div id="cam"></div>
+  <h2>This round's frowns</h2>
+  <div id="gallery"><p class="empty">Loading…</p></div>
+  <h2>Hall of frowns 🏆</h2>
+  <div id="champs"></div>
+  <div id="fame"></div>
+</div>
+
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getDatabase,ref,set,query,orderByChild,startAt,onValue} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import config from './firebase-config.js';
+
+const HOUR=3600000;
+const hk=(t=Date.now())=>Math.floor(t/HOUR);
+const safe=s=>String(s).replace(/[^\w-]/g,'_');
+const okImg=s=>typeof s==='string'&&/^data:image\/jpeg;base64,[A-Za-z0-9+\/=]+$/.test(s)&&s.length<150000;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmtHour=k=>new Date(k*HOUR).toLocaleString([], {weekday:'short',hour:'numeric'});
+const mmss=ms=>{ms=Math.max(0,ms);const m=Math.floor(ms/60000),s=Math.floor(ms%60000/1000);return m+':'+String(s).padStart(2,'0')};
+
+let db=null,frowns=[],votes=[],loaded=false,name='';
+let cam={state:'idle',img:'',msg:''},stream=null;
+
+/* anonymous per-browser identity, no accounts */
+let uid;
+try{uid=localStorage.getItem('ff-uid');if(!uid){uid=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/-/g,'');localStorage.setItem('ff-uid',uid)}name=localStorage.getItem('ff-name')||''}catch(e){uid=uid||('t'+Math.random().toString(36).slice(2))}
+uid=safe(uid);
+
+function init(){
+  renderCam();renderAll();
+  if(!config||!config.databaseURL||config.databaseURL.includes('YOUR-PROJECT')){
+    $('banner').innerHTML='<div class="banner"><b>Setup needed:</b> open <code>firebase-config.js</code> and paste your Firebase Realtime Database URL. See README.md.</div>';
+    $('gallery').innerHTML='';return;
+  }
+  db=getDatabase(initializeApp({databaseURL:config.databaseURL}));
+  const cutoff=Date.now()-72*HOUR;
+  const timer=setTimeout(()=>{if(!loaded)$('gallery').innerHTML='<p class="empty">Can’t reach the database yet…</p>'},10000);
+  const onErr=e=>{clearTimeout(timer);$('gallery').innerHTML='<p class="empty err">Couldn’t load: '+esc(e.message||'error')+'</p>'};
+  const list=snap=>{const v=snap.val()||{};return Object.entries(v).map(([id,x])=>({id,...x}))};
+  onValue(query(ref(db,'frowns'),orderByChild('ts'),startAt(cutoff)),s=>{clearTimeout(timer);loaded=true;frowns=list(s);renderAll();renderCam()},onErr);
+  onValue(query(ref(db,'votes'),orderByChild('ts'),startAt(cutoff)),s=>{votes=list(s);renderAll()},onErr);
+  renderCam();
+}
+const myFrown=k=>frowns.find(f=>f.uid===uid&&f.hk===k);
+
+/* ---------- camera ---------- */
+function stopStream(){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}
+async function startCam(){
+  cam={state:'starting',img:'',msg:''};renderCam();
+  try{
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('no api');
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:720},height:{ideal:720}},audio:false});
+    cam.state='live';renderCam();
+  }catch(e){stopStream();cam={state:'nocam',img:'',msg:''};renderCam()}
+}
+function countdown(){
+  cam.state='count';renderCam();let n=3;
+  const tick=()=>{
+    const el=$('big');
+    if(n>0){if(el)el.textContent=n;n--;setTimeout(tick,900)}
+    else{if(el)el.textContent='🙁';setTimeout(snap,350)}
+  };tick();
+}
+function squareFrom(src,w,h,mirror){
+  const s=320,c=document.createElement('canvas');c.width=c.height=s;
+  const x=c.getContext('2d'),m=Math.min(w,h);
+  if(mirror){x.translate(s,0);x.scale(-1,1)}
+  x.drawImage(src,(w-m)/2,(h-m)/2,m,m,0,0,s,s);
+  return c.toDataURL('image/jpeg',.7);
+}
+function snap(){
+  const v=$('vid');if(!v)return;
+  cam.img=squareFrom(v,v.videoWidth,v.videoHeight,true);
+  stopStream();cam.state='review';renderCam();
+}
+function fromFile(f){
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{const im=new Image();im.onload=()=>{cam.img=squareFrom(im,im.width,im.height,false);cam.state='review';renderCam()};im.src=r.result};
+  r.readAsDataURL(f);
+}
+async function submit(){
+  const nm=($('nm').value||'').trim().slice(0,24);
+  if(!nm||!cam.img||!db)return;
+  const k=hk();
+  if(myFrown(k)){cam.state='idle';renderCam();return}
+  try{localStorage.setItem('ff-name',nm)}catch(e){}
+  name=nm;$('go').disabled=true;
+  try{
+    await set(ref(db,'frowns/'+uid+'_'+k),{uid,name:nm,img:cam.img,hk:k,ts:Date.now()});
+    cam={state:'idle',img:'',msg:''};
+  }catch(e){cam.msg='Couldn’t save that — you may already have a frown this hour. Try again.';cam.state='review'}
+  renderCam();
+}
+async function castVote(fid){
+  if(!db)return;const k=hk();
+  try{await set(ref(db,'votes/'+k+'_'+uid),{hk:k,uid,frownId:fid,ts:Date.now()})}catch(e){}
+}
+
+/* ---------- render: camera panel ---------- */
+function renderCam(){
+  const el=$('cam'),k=hk();
+  if(!db){el.innerHTML='';return}
+  const mine=myFrown(k);
+  if(mine&&cam.state!=='review'){
+    stopStream();
+    el.innerHTML=`<div class="panel"><div class="lock">🔒</div><b>Your frown is in for this round.</b>
+      <div class="note">Next frown unlocks in <b id="left">${mmss((k+1)*HOUR-Date.now())}</b></div></div>`;return;
+  }
+  const s=cam.state;
+  if(s==='idle'){
+    el.innerHTML=`<div class="panel"><div style="font-size:3rem">📸</div><b>Your turn to frown</b>
+      <div class="note">Round: ${fmtHour(k)} · ends in <b id="left">${mmss((k+1)*HOUR-Date.now())}</b></div>
+      <button class="go" id="start">Open webcam</button></div>`;
+    $('start').onclick=startCam;
+  }else if(s==='starting'){
+    el.innerHTML='<div class="panel"><p class="note">Starting camera… allow access if asked.</p></div>';
+  }else if(s==='live'||s==='count'){
+    el.innerHTML=`<div class="panel"><div class="stage"><video id="vid" playsinline muted></video><div class="ring"></div>${s==='count'?'<div class="big" id="big"></div>':''}</div>
+      ${s==='live'?'<button class="go" id="shoot">Frown on 3…</button><button class="alt" id="cancel">Cancel</button>':'<p class="note">Get that frown ready…</p>'}</div>`;
+    const v=$('vid');if(stream){v.srcObject=stream;v.play().catch(()=>{})}
+    if(s==='live'){$('shoot').onclick=countdown;$('cancel').onclick=()=>{stopStream();cam.state='idle';renderCam()}}
+  }else if(s==='nocam'){
+    el.innerHTML=`<div class="panel"><b>Couldn’t start the webcam</b>
+      <div class="note">Check that you allowed camera access for this site (the camera icon in the address bar). You can also pick a photo instead.</div>
+      <label class="go" for="file">Take / choose a frown photo</label>
+      <input type="file" id="file" accept="image/*" capture="user" hidden>
+      <button class="alt" id="retry">Try the webcam again</button></div>`;
+    $('file').onchange=e=>fromFile(e.target.files[0]);$('retry').onclick=startCam;
+  }else if(s==='review'){
+    el.innerHTML=`<div class="panel"><div class="stage"><img src="${cam.img}" alt="Your frown"></div>
+      <input type="text" id="nm" maxlength="24" placeholder="Your name" value="${esc(name)}">
+      <button class="go" id="go">Submit my frown</button><button class="alt" id="redo">Retake</button>
+      <div class="note ${cam.msg?'err':''}">${cam.msg||'Once submitted you’re locked until the next hour.'}</div></div>`;
+    $('go').onclick=submit;$('redo').onclick=()=>{cam={state:'idle',img:'',msg:''};startCam()};
+  }
+}
+
+/* ---------- render: gallery + hall of fame ---------- */
+function tally(k){const c={};votes.filter(v=>v.hk===k).forEach(v=>{c[v.frownId]=(c[v.frownId]||0)+1});return c}
+function winnerOf(k){
+  const c=tally(k),list=frowns.filter(f=>f.hk===k&&okImg(f.img));
+  let best=null;
+  list.forEach(f=>{const n=c[f.id]||0;if(n>0&&(!best||n>best.n||(n===best.n&&f.ts<best.f.ts)))best={f,n}});
+  return best;
+}
+function renderAll(){
+  const k=hk(),cur=frowns.filter(f=>f.hk===k&&okImg(f.img)).sort((a,b)=>a.ts-b.ts);
+  $('round').innerHTML=`<div class="pill">Round <b>${fmtHour(k)}</b></div><div class="pill">Ends in <b id="left2">${mmss((k+1)*HOUR-Date.now())}</b></div><div class="pill"><b>${cur.length}</b> frown${cur.length===1?'':'s'}</div>`;
+  const g=$('gallery');
+  if(!db)return;
+  if(!loaded){g.innerHTML='<p class="empty">Loading…</p>'}
+  else if(!cur.length){g.innerHTML='<p class="empty">No frowns yet this hour. Be the first! 🙁</p>'}
+  else{
+    const c=tally(k),max=Math.max(0,...cur.map(f=>c[f.id]||0));
+    const myVote=votes.find(v=>v.hk===k&&v.uid===uid);
+    g.innerHTML='<div class="grid">'+cur.map(f=>{
+      const n=c[f.id]||0,isMine=f.uid===uid,picked=myVote&&myVote.frownId===f.id,lead=max>0&&n===max;
+      return `<div class="card ${lead?'lead':''} ${isMine?'mine':''} ${picked?'picked':''}">${lead?'<div class="crown">👑</div>':''}
+        <div class="stage"><img src="${f.img}" alt="${esc(f.name)}'s frown"></div>
+        <div class="nm">${esc(f.name)}${isMine?' (you)':''}</div>
+        <button class="vote ${picked?'on':''}" data-id="${esc(f.id)}" ${isMine?'disabled':''}>${picked?'✓ Your vote · ':'Vote · '}${n}</button></div>`;
+    }).join('')+'</div>';
+    g.querySelectorAll('.vote').forEach(b=>b.onclick=()=>castVote(b.dataset.id));
+  }
+  const ks=[...new Set(frowns.map(f=>f.hk))].filter(x=>x<k).sort((a,b)=>b-a);
+  const rows=[],wins={};
+  ks.forEach(x=>{const w=winnerOf(x);if(w){rows.push([x,w]);wins[w.f.uid]=wins[w.f.uid]||{name:w.f.name,n:0};wins[w.f.uid].n++}});
+  const tw=Object.values(wins).sort((a,b)=>b.n-a.n);
+  $('champs').innerHTML=tw.length?'<div class="wins">'+tw.map(w=>`<div class="pill"><b>${esc(w.name)}</b> · ${w.n} win${w.n>1?'s':''}</div>`).join('')+'</div>':'';
+  $('fame').innerHTML=rows.length?'<div class="fame" style="margin-top:12px">'+rows.slice(0,24).map(([x,w])=>
+    `<div class="frow"><img src="${w.f.img}" alt=""><div><div class="w">${esc(w.f.name)}</div><div class="t">${fmtHour(x)} round</div></div><div class="w">👑 ${w.n} vote${w.n>1?'s':''}</div></div>`).join('')+'</div>'
+    :'<p class="empty">Winners appear here when a round ends.</p>';
+}
+
+let lastK=hk();
+setInterval(()=>{
+  const k=hk(),left=mmss((k+1)*HOUR-Date.now());
+  const a=$('left'),b=$('left2');if(a)a.textContent=left;if(b)b.textContent=left;
+  if(k!==lastK){lastK=k;renderAll();if(cam.state==='idle')renderCam()}
+},1000);
+window.addEventListener('pagehide',stopStream);
+init();
+</script>
+</body>
+</html>
