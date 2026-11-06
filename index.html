@@ -240,21 +240,13 @@ function renderAll(){
 
 /* anniversary announcement: appears at 12:00am SGT, 7 Nov 2026 (= 16:00 UTC, 6 Nov) */
 const ANN_AT=Date.UTC(2026,10,6,16,0,0);
-const ANN_TEXT=`Happy anniversary!! Can you believe that it’s one year into our relationship?! If I didn’t ask you out for the East Coast Park date, I’d probably still be single by now and destined to be single for the rest of my life since my immaculate rizz only works on you hehe.
-
-Life in America is fun! I feel like I’m adapting to living here, be it meal prepping or the long distance walks. But all these experiences would be better if you were here :(
-
-I wish for a future where we travel with a car exploring new cities and nature. That’s tons of places to be freaky heheh jokes.
-
-Don’t miss me so much, Singapore! Don’t you dare dream of me dying :( I’ll be back safely heheh and we will finally spend time together again heheh!`;
 let annClosed=false;
 function renderAnn(){
   const el=$('ann');if(!el)return;
   let seen=annClosed;try{seen=seen||localStorage.getItem('ff-ann')==='1'}catch(e){}
   if(Date.now()<ANN_AT||seen){el.innerHTML='';return}
   if(el.firstChild)return;
-  el.innerHTML='<div class="ann"><div class="annh">💌 Happy 1 year anniversary!</div><div class="annt" id="annt"></div><button class="alt" id="annx">Close</button></div>';
-  $('annt').textContent=ANN_TEXT;
+  el.innerHTML='<div class="ann"><div class="annh">💌 Happy 1 year anniversary!</div><div class="annt" style="text-align:center">There’s a little challenge waiting for you.</div><a href="anniversary.html" style="display:block;background:#ffb347;color:#1a1a1a;border-radius:12px;padding:13px;font:700 1rem \'DM Sans\';text-align:center;text-decoration:none;margin-top:14px">Start the challenge</a><button class="alt" id="annx">Maybe later</button></div>';
   $('annx').onclick=()=>{annClosed=true;try{localStorage.setItem('ff-ann','1')}catch(e){}el.innerHTML=''};
 }
 
