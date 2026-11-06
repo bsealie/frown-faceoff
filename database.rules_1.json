@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "frowns": {
+      ".indexOn": ["ts"],
+      ".read": true,
+      "$id": {
+        ".write": "!data.exists()",
+        ".validate": "newData.hasChildren(['uid','name','img','hk','ts']) && newData.child('name').isString() && newData.child('name').val().length <= 24 && newData.child('img').isString() && newData.child('img').val().length < 150000 && newData.child('hk').isNumber() && newData.child('hk').val() * 3600000 <= now && (newData.child('hk').val() + 1) * 3600000 > now && newData.child('uid').isString() && $id.beginsWith(newData.child('uid').val() + '_')"
+      }
+    },
+    "votes": {
+      ".indexOn": ["ts"],
+      ".read": true,
+      "$id": {
+        ".write": "newData.exists()",
+        ".validate": "newData.hasChildren(['uid','hk','frownId','ts']) && newData.child('hk').isNumber() && newData.child('hk').val() * 3600000 <= now && (newData.child('hk').val() + 1) * 3600000 > now && newData.child('uid').isString() && $id.endsWith('_' + newData.child('uid').val())"
+      }
+    }
+  }
+}
