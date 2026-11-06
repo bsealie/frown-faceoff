@@ -48,6 +48,9 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .frow img{width:52px;height:52px;border-radius:10px;object-fit:cover}
 .frow .w{font-weight:700}.frow .t{color:var(--mute);font-size:.82rem}
 .wins{display:flex;flex-wrap:wrap;gap:8px}
+.ann{background:linear-gradient(160deg,#3b2540,#2a2f4d);border:1px solid #7a4d8f;border-radius:20px;padding:22px;max-width:620px;margin:0 auto 24px;text-align:center}
+.annh{font-family:'Fraunces',serif;font-weight:900;font-size:1.5rem;margin-bottom:12px}
+.annt{white-space:pre-wrap;line-height:1.6;text-align:left;margin-bottom:6px}
 .banner{background:#3a2430;border:1px solid #6b3a4a;color:#ffb8c4;border-radius:14px;padding:14px;text-align:center;max-width:560px;margin:0 auto 18px;line-height:1.5}
 </style>
 </head>
@@ -55,6 +58,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 <div class="wrap">
   <h1>Frown <span>Face-Off</span> 🙁</h1>
   <p class="sub">One frown per person, per hour. Best frown of the round wins.</p>
+  <div id="ann"></div>
   <div id="banner"></div>
   <div class="round" id="round"></div>
   <div id="cam"></div>
@@ -234,13 +238,35 @@ function renderAll(){
     :'<p class="empty">Winners appear here when a round ends.</p>';
 }
 
+/* anniversary announcement: appears at 12:00am SGT, 7 Nov 2026 (= 16:00 UTC, 6 Nov) */
+const ANN_AT=Date.UTC(2026,10,6,16,0,0);
+const ANN_TEXT=`Happy anniversary!! Can you believe that it’s one year into our relationship?! If I didn’t ask you out for the East Coast Park date, I’d probably still be single by now and destined to be single for the rest of my life since my immaculate rizz only works on you hehe.
+
+Life in America is fun! I feel like I’m adapting to living here, be it meal prepping or the long distance walks. But all these experiences would be better if you were here :(
+
+I wish for a future where we travel with a car exploring new cities and nature. That’s tons of places to be freaky heheh jokes.
+
+Don’t miss me so much, Singapore! Don’t you dare dream of me dying :( I’ll be back safely heheh and we will finally spend time together again heheh!`;
+let annClosed=false;
+function renderAnn(){
+  const el=$('ann');if(!el)return;
+  let seen=annClosed;try{seen=seen||localStorage.getItem('ff-ann')==='1'}catch(e){}
+  if(Date.now()<ANN_AT||seen){el.innerHTML='';return}
+  if(el.firstChild)return;
+  el.innerHTML='<div class="ann"><div class="annh">💌 Happy 1 year anniversary!</div><div class="annt" id="annt"></div><button class="alt" id="annx">Close</button></div>';
+  $('annt').textContent=ANN_TEXT;
+  $('annx').onclick=()=>{annClosed=true;try{localStorage.setItem('ff-ann','1')}catch(e){}el.innerHTML=''};
+}
+
 let lastK=hk();
 setInterval(()=>{
   const k=hk(),left=mmss((k+1)*HOUR-Date.now());
   const a=$('left'),b=$('left2');if(a)a.textContent=left;if(b)b.textContent=left;
+  renderAnn();
   if(k!==lastK){lastK=k;renderAll();if(cam.state==='idle')renderCam()}
 },1000);
 window.addEventListener('pagehide',stopStream);
+renderAnn();
 init();
 </script>
 </body>
